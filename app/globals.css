@@ -1,0 +1,529 @@
+@font-face {
+  font-family: "ChicagoFLF";
+  src: local("Chicago"), local("Charcoal CY");
+  font-display: swap;
+}
+
+:root {
+  --mac-desktop: #7f9ca6;
+  --mac-window-bg: #dddddd;
+  --mac-window-bg-2: #c8c8c8;
+  --mac-border: #000000;
+  --mac-titlebar-line: #9c9c9c;
+  --mac-text: #000000;
+  --mac-highlight: #000080;
+  --mac-highlight-bg: #cfe0ff;
+  --mac-shadow: rgba(0, 0, 0, 0.45);
+  --mac-inset-bg: #ffffff;
+  --mac-console-bg: #101820;
+  --mac-console-fg: #7fff9f;
+  --mac-error: #b40000;
+  --mac-btn-face: #e8e8e8;
+  --font-ui: "Geneva", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "Monaco", "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--mac-desktop);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 4px 4px;
+  color: var(--mac-text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ---------- Menu bar ---------- */
+
+.menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--mac-border);
+  display: flex;
+  align-items: stretch;
+  z-index: 1000;
+  font-weight: 500;
+  user-select: none;
+}
+
+.menubar-apple {
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: default;
+}
+
+.menubar-item {
+  position: relative;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+
+.menubar-item.open,
+.menubar-item:hover {
+  background: var(--mac-highlight);
+  color: #fff;
+}
+
+.menubar-title {
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  min-width: 190px;
+  background: #ffffff;
+  border: 1px solid var(--mac-border);
+  box-shadow: 2px 2px 0 var(--mac-shadow);
+  padding: 3px 0;
+  z-index: 1001;
+}
+
+.menu-dropdown-item {
+  padding: 3px 20px 3px 16px;
+  white-space: nowrap;
+  cursor: default;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.menu-dropdown-item:hover:not(.disabled) {
+  background: var(--mac-highlight);
+  color: #fff;
+}
+
+.menu-dropdown-item.disabled {
+  color: #9a9a9a;
+}
+
+.menu-dropdown-sep {
+  height: 1px;
+  background: #c0c0c0;
+  margin: 3px 0;
+}
+
+.menu-shortcut {
+  color: inherit;
+  opacity: 0.65;
+  font-size: 11px;
+}
+
+/* ---------- Desktop layout ---------- */
+
+.desktop {
+  position: fixed;
+  top: 22px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.desktop-editor-col {
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 14px;
+}
+
+.desktop-side-col {
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 14px;
+}
+
+/* ---------- Mac window chrome ---------- */
+
+.mac-window {
+  background: var(--mac-window-bg);
+  border: 1px solid var(--mac-border);
+  box-shadow: 3px 3px 0 var(--mac-shadow);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mac-titlebar {
+  height: 20px;
+  flex: 0 0 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--mac-border);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #ffffff 0px,
+    #ffffff 2px,
+    var(--mac-window-bg) 2px,
+    var(--mac-window-bg) 4px
+  );
+  user-select: none;
+}
+
+.mac-close-box {
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--mac-border);
+  background: var(--mac-window-bg);
+  margin-right: 8px;
+  flex: 0 0 auto;
+}
+
+.mac-close-box:active {
+  background: var(--mac-highlight-bg);
+}
+
+.mac-titlebar-title {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  background: var(--mac-window-bg);
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mac-titlebar-spacer {
+  width: 19px;
+  flex: 0 0 auto;
+}
+
+.mac-window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--mac-inset-bg);
+}
+
+.mac-window-body.no-scroll {
+  overflow: hidden;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  flex: 0 0 auto;
+  background: var(--mac-window-bg);
+  border: 1px solid var(--mac-border);
+  box-shadow: 3px 3px 0 var(--mac-shadow);
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mac-btn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  background: var(--mac-btn-face);
+  border: 1px solid var(--mac-border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: default;
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+}
+
+.mac-btn:active:not(:disabled) {
+  background: var(--mac-highlight);
+  color: #fff;
+}
+
+.mac-btn:disabled {
+  color: #9a9a9a;
+  cursor: default;
+}
+
+.toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: #a8a8a8;
+  margin: 2px 4px;
+}
+
+.toolbar-status {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid #999;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.status-idle { color: #555; }
+.status-assembled { color: #005f00; }
+.status-running { color: #8a5a00; }
+.status-halted { color: #333; }
+.status-error { color: var(--mac-error); font-weight: bold; }
+
+/* ---------- Editor ---------- */
+
+.editor-wrap {
+  display: flex;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.editor-gutter {
+  flex: 0 0 auto;
+  padding: 8px 6px 8px 10px;
+  text-align: right;
+  color: #8a8a8a;
+  background: #eeeeee;
+  border-right: 1px solid #ccc;
+  user-select: none;
+  white-space: pre;
+  position: relative;
+}
+
+.editor-gutter-line.active {
+  color: #000;
+  font-weight: bold;
+}
+
+.editor-scroll {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+.editor-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18px;
+  background: #fff6b0;
+  pointer-events: none;
+}
+
+.editor-error-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18px;
+  background: #ffd0d0;
+  pointer-events: none;
+}
+
+.editor-textarea {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: pre;
+  overflow-wrap: normal;
+  background: transparent;
+  color: #111;
+}
+
+/* ---------- Registers ---------- */
+
+.reg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.reg-table td {
+  padding: 1px 6px;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.reg-name {
+  color: #555;
+  width: 44px;
+}
+
+.reg-value {
+  text-align: right;
+}
+
+.reg-row.changed {
+  background: var(--mac-highlight-bg);
+}
+
+.reg-special {
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  gap: 14px;
+}
+
+/* ---------- Memory ---------- */
+
+.mem-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+  font-size: 11px;
+}
+
+.mem-controls input {
+  width: 90px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid #999;
+  padding: 2px 4px;
+}
+
+.mem-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.mem-table td {
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.mem-addr {
+  color: #666;
+  border-right: 1px solid #ddd;
+}
+
+.mem-byte {
+  text-align: center;
+  color: #333;
+}
+
+.mem-ascii {
+  color: #777;
+  padding-left: 10px;
+}
+
+/* ---------- Console ---------- */
+
+.console-body {
+  background: var(--mac-console-bg) !important;
+  color: var(--mac-console-fg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-errors {
+  color: #ff8080;
+}
+
+/* ---------- Modal dialog ---------- */
+
+.mac-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.mac-modal {
+  width: 320px;
+  background: var(--mac-window-bg);
+  border: 1px solid var(--mac-border);
+  box-shadow: 4px 4px 0 var(--mac-shadow);
+}
+
+.mac-modal-body {
+  padding: 16px;
+  font-size: 12px;
+}
+
+.mac-modal-body input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border: 1px solid #888;
+}
+
+.mac-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px 16px;
+}
+
+.mac-btn.primary {
+  border-width: 2px;
+  font-weight: bold;
+}
+
+/* ---------- Scrollbars, classic-ish ---------- */
+
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e8e8e8;
+  border-left: 1px solid #bbb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4c4c4;
+  border: 1px solid #888;
+}
+
+::-webkit-scrollbar-corner {
+  background: #e8e8e8;
+}
