@@ -33,7 +33,7 @@ export function Toolbar({
 }) {
   const running = state.status === "running";
   const canStep = (state.status === "assembled" || state.status === "halted") && !running;
-  const canRun = state.status === "assembled" && !running;
+  const canRun = !running;
 
   return (
     <div className="toolbar">
@@ -42,7 +42,9 @@ export function Toolbar({
       <button className="mac-btn" onClick={onSave}>Save…</button>
       <div className="toolbar-sep" />
       <button className="mac-btn" onClick={onAssemble} disabled={running}>Assemble</button>
-      <button className="mac-btn" onClick={onRun} disabled={!canRun}>▶ Run</button>
+      <button className="mac-btn" onClick={onRun} disabled={!canRun} title="Assemble &amp; Run (Ctrl/Cmd+Enter)">
+        ▶ Run <span style={{ opacity: 0.6, fontSize: 10 }}>⌃⏎</span>
+      </button>
       <button className="mac-btn" onClick={onStep} disabled={!canStep}>⏭ Step</button>
       <button className="mac-btn" onClick={onStop} disabled={!running}>■ Stop</button>
       <button className="mac-btn" onClick={onReset} disabled={state.status === "idle"}>↺ Reset</button>

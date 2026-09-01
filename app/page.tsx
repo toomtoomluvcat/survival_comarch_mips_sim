@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MenuBar, type Menu } from "@/components/MenuBar";
 import { MacWindow } from "@/components/MacWindow";
 import { CodeEditor } from "@/components/CodeEditor";
@@ -22,6 +22,7 @@ export default function Home() {
   const {
     state,
     assembleProgram,
+    assembleAndRun,
     step,
     run,
     stop,
@@ -37,11 +38,32 @@ export default function Home() {
     assembleProgram(source);
   };
 
+  // "Run" always (re-)assembles first, so there is no need to click Assemble
+  // separately — one button/shortcut does both.
+  const doAssembleAndRun = () => {
+    lastRegsRef.current = null;
+    setPrevRegisters(null);
+    assembleAndRun(source);
+  };
+
   const wrappedStep = () => {
     lastRegsRef.current = state.registers;
     setPrevRegisters(state.registers);
     step();
   };
+
+  // Ctrl+Enter / Cmd+Enter = Assemble & Run, from anywhere on the page (including the editor).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        if (state.status !== "running") doAssembleAndRun();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, state.status]);
 
   const handleNew = () => {
     if (!confirm("Discard current code and start a new file?")) return;
@@ -87,8 +109,8 @@ export default function Home() {
     {
       label: "Run",
       items: [
-        { label: "Assemble", shortcut: "⌘K", onSelect: doAssemble },
-        { label: "Run", shortcut: "⌘R", disabled: state.status !== "assembled", onSelect: run },
+        { label: "Assemble && Run", shortcut: "⌃⏎", disabled: state.status === "running", onSelect: doAssembleAndRun },
+        { label: "Assemble only", shortcut: "⌘K", onSelect: doAssemble },
         { label: "Step", shortcut: "⌘.", disabled: !(state.status === "assembled" || state.status === "halted"), onSelect: wrappedStep },
         { label: "Stop", disabled: state.status !== "running", onSelect: stop },
         { label: "Reset", separatorBefore: true, disabled: state.status === "idle", onSelect: reset },
@@ -125,7 +147,7 @@ export default function Home() {
             onOpen={handleOpenClick}
             onSave={handleSave}
             onAssemble={doAssemble}
-            onRun={run}
+            onRun={doAssembleAndRun}
             onStep={wrappedStep}
             onStop={stop}
             onReset={reset}

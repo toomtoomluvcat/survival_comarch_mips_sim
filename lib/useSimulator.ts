@@ -86,14 +86,14 @@ export function useSimulator() {
     }
   };
 
-  const assembleProgram = useCallback((source: string) => {
+  const assembleProgram = useCallback((source: string): boolean => {
     stopFlag.current = true;
     const program = assemble(source);
     if (!program.ok) {
       programRef.current = null;
       cpuRef.current = null;
       setState({ ...INITIAL, status: "error", errors: program.errors });
-      return;
+      return false;
     }
     const mem = buildInitialMemory(program, source);
     const cpu = new CPU(program, mem);
@@ -109,6 +109,7 @@ export function useSimulator() {
       pc: cpu.pc,
       currentLine: cpu.currentLine() ?? null,
     });
+    return true;
   }, []);
 
   const doOneStep = (): "ok" | "halted" | "waiting" | "error" => {
@@ -191,10 +192,16 @@ export function useSimulator() {
   }, [assembleProgram]);
 
   const lastSourceRef = useRef<string | null>(null);
-  const assembleAndRemember = useCallback((source: string) => {
+  const assembleAndRemember = useCallback((source: string): boolean => {
     lastSourceRef.current = source;
-    assembleProgram(source);
+    return assembleProgram(source);
   }, [assembleProgram]);
+
+  /** Assemble + Run in one shot (Ctrl/Cmd+Enter, or the toolbar "Run" button). */
+  const assembleAndRun = useCallback((source: string) => {
+    const ok = assembleAndRemember(source);
+    if (ok) run();
+  }, [assembleAndRemember, run]);
 
   const submitIntInput = useCallback((value: number) => {
     const cpu = cpuRef.current;
@@ -222,6 +229,7 @@ export function useSimulator() {
   return {
     state,
     assembleProgram: assembleAndRemember,
+    assembleAndRun,
     step,
     run,
     stop,
