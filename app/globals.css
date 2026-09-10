@@ -5,6 +5,7 @@
 }
 
 :root {
+  --mac-menubar-height: 32px;
   --mac-desktop: #7f9ca6;
   --mac-window-bg: #dddddd;
   --mac-window-bg-2: #c8c8c8;
@@ -51,7 +52,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 22px;
+  height: var(--mac-menubar-height);
   background: #ffffff;
   border-bottom: 1px solid var(--mac-border);
   display: flex;
@@ -61,13 +62,20 @@ body {
   user-select: none;
 }
 
-.menubar-apple {
-  width: 30px;
+.menubar-brand {
+  flex: 0 0 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   cursor: default;
+}
+
+.menubar-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .menubar-item {
@@ -95,7 +103,7 @@ body {
 
 .menu-dropdown {
   position: absolute;
-  top: 22px;
+  top: var(--mac-menubar-height);
   left: 0;
   min-width: 190px;
   background: #ffffff;
@@ -139,7 +147,7 @@ body {
 
 .desktop {
   position: fixed;
-  top: 22px;
+  top: var(--mac-menubar-height);
   left: 0;
   right: 0;
   bottom: 0;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 export interface MenuItem {
   label: string;
@@ -29,7 +30,17 @@ export function MenuBar({ menus }: { menus: Menu[] }) {
 
   return (
     <div className="menubar" ref={ref}>
-      <div className="menubar-apple"></div>
+      <div className="menubar-brand" title="MIPS Simulator">
+        <Image
+          className="menubar-logo"
+          src="/mips-logo.png?v=20260910-2"
+          alt="MIPS Simulator smiling pixel CPU logo"
+          width={28}
+          height={28}
+          loading="eager"
+          unoptimized
+        />
+      </div>
       {menus.map((menu, i) => (
         <div
           key={menu.label}
