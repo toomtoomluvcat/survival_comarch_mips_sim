@@ -26,6 +26,14 @@ export function resolveRegister(token: string): number | null {
   return null;
 }
 
+export function resolveFloatRegister(token: string): number | null {
+  if (!token) return null;
+  const match = token.trim().match(/^\$f(\d+)$/i);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return n >= 0 && n <= 31 ? n : null;
+}
+
 export function registerLabel(index: number): string {
   return "$" + REGISTER_NAMES[index];
 }

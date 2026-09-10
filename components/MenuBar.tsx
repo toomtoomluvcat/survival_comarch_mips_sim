@@ -15,7 +15,7 @@ export interface Menu {
   items: MenuItem[];
 }
 
-export function MenuBar({ menus, clock }: { menus: Menu[]; clock?: string }) {
+export function MenuBar({ menus }: { menus: Menu[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 

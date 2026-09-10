@@ -43,6 +43,7 @@ export function useSimulator() {
   const programRef = useRef<AssembledProgram | null>(null);
   const stopFlag = useRef(false);
   const totalSteps = useRef(0);
+  const [lastSource, setLastSource] = useState<string | null>(null);
 
   const snapshot = useCallback((extra: Partial<SimState> = {}) => {
     const cpu = cpuRef.current;
@@ -58,11 +59,11 @@ export function useSimulator() {
     }));
   }, []);
 
-  const appendConsole = (text: string) => {
+  const appendConsole = useCallback((text: string) => {
     setState((s) => ({ ...s, consoleText: s.consoleText + text }));
-  };
+  }, []);
 
-  const handleSyscall = (sc: SyscallKind): WaitingInput | null => {
+  const handleSyscall = useCallback((sc: SyscallKind): WaitingInput | null => {
     switch (sc.kind) {
       case "print_int":
         appendConsole(String(sc.value));
@@ -84,7 +85,7 @@ export function useSimulator() {
         appendConsole(`\n[unsupported syscall $v0=${sc.code}]\n`);
         return null;
     }
-  };
+  }, [appendConsole]);
 
   const assembleProgram = useCallback((source: string): boolean => {
     stopFlag.current = true;
@@ -112,7 +113,7 @@ export function useSimulator() {
     return true;
   }, []);
 
-  const doOneStep = (): "ok" | "halted" | "waiting" | "error" => {
+  const doOneStep = useCallback((): "ok" | "halted" | "waiting" | "error" => {
     const cpu = cpuRef.current;
     if (!cpu || cpu.halted) return "halted";
     const { syscall, error } = cpu.step();
@@ -130,14 +131,14 @@ export function useSimulator() {
     }
     if (cpu.halted) return "halted";
     return "ok";
-  };
+  }, [handleSyscall, snapshot]);
 
   const step = useCallback(() => {
     const result = doOneStep();
     if (result === "ok") snapshot({ status: "assembled" });
     else if (result === "halted") snapshot({ status: "halted", waitingInput: null });
     // "waiting" and "error" already snapshot inside doOneStep
-  }, [snapshot]);
+  }, [doOneStep, snapshot]);
 
   const run = useCallback(() => {
     stopFlag.current = false;
@@ -174,7 +175,7 @@ export function useSimulator() {
       }
     };
     chunk();
-  }, [snapshot]);
+  }, [doOneStep, snapshot]);
 
   const stop = useCallback(() => {
     stopFlag.current = true;
@@ -187,13 +188,12 @@ export function useSimulator() {
       return;
     }
     // Re-assemble is the simplest reliable way to reset memory + registers.
-    const src = lastSourceRef.current;
+    const src = lastSource;
     if (src != null) assembleProgram(src);
-  }, [assembleProgram]);
+  }, [assembleProgram, lastSource]);
 
-  const lastSourceRef = useRef<string | null>(null);
   const assembleAndRemember = useCallback((source: string): boolean => {
-    lastSourceRef.current = source;
+    setLastSource(source);
     return assembleProgram(source);
   }, [assembleProgram]);
 

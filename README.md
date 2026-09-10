@@ -1,3 +1,5 @@
+# อัปเดตประจำวัน (10 กันยายน 2026): ปรับปรุง MIPS engine ให้สอดคล้องกับ EMIPS Reference Card โดยรองรับ Big Endian, memory layout, atomic instructions, floating-point instructions และ exception handling เบื้องต้น
+
 # MIPS Simulator
 
 จำลองการทำงานของ CPU สถาปัตยกรรม **MIPS32** ผ่านเว็บเบราว์เซอร์ หน้าตาเป็น IDE สไตล์ **Classic Mac OS** (System 7 / Mac OS 9) เขียนหน้าโปรแกรม เปิด/บันทึกไฟล์ แล้ว assemble + รันโปรแกรม MIPS assembly ดูค่าใน register และหน่วยความจำแบบ real-time ได้ทั้งหมดในเบราว์เซอร์ โดยไม่ต้องติดตั้งโปรแกรมจำลองแยกต่างหาก (ไม่ต้องมี backend/server ประมวลผล — รันฝั่ง client ล้วนๆ)
@@ -128,9 +130,10 @@ npx tsc --noEmit -p .   # ตรวจ TypeScript type อย่างเดี�
 | Shift | `sll`, `srl`, `sra`, `sllv`, `srlv`, `srav` |
 | Branch | `beq`, `bne`, `blez`, `bgtz`, `bltz`, `bgez` |
 | Jump | `j`, `jal`, `jr`, `jalr` |
-| Load/Store หน่วยความจำ | `lw`, `sw`, `lb`, `lbu`, `sb`, `lh`, `lhu`, `sh` |
+| Load/Store หน่วยความจำ | `lw`, `sw`, `lb`, `lbu`, `sb`, `lh`, `lhu`, `sh`, `ll`, `sc` |
 | Multiply/Divide | `mult`, `multu`, `div`, `divu`, `mfhi`, `mflo`, `mthi`, `mtlo` |
-| อื่นๆ | `syscall` |
+| Floating point (Cop1) | `add.s`, `add.d`, `sub.s`, `sub.d`, `mul.s`, `mul.d`, `div.s`, `div.d`, `c.eq.s`, `c.lt.s`, `c.le.s`, `c.eq.d`, `c.lt.d`, `c.le.d`, `lwc1`, `ldc1`, `swc1`, `sdc1`, `bc1t`, `bc1f` |
+| Control / system | `mfc0`, `syscall`, `break`, `sync` |
 
 ### Pseudo-instructions (assembler ขยายให้อัตโนมัติ)
 
@@ -138,7 +141,7 @@ npx tsc --noEmit -p .   # ตรวจ TypeScript type อย่างเดี�
 
 > คำสั่งเปรียบเทียบแบบ pseudo (`blt`/`bgt`/`ble`/`bge` และรุ่น unsigned) รองรับทั้งกรณีเทียบกับ **register** และเทียบกับ **ค่าคงที่** เช่น `bgt $t0, 10, done` ได้โดยตรง (assembler จะแทรกคำสั่งโหลดค่าคงที่ลง `$at`/`$k1` ให้อัตโนมัติ)
 
-**ยังไม่รองรับ:** คำสั่งกลุ่ม floating point (coprocessor 1 / `$f0`-`$f31`, `add.s`, `lwc1` ฯลฯ) และคำสั่ง trap/exception ขั้นสูง
+คำสั่ง `add`/`addi`/`sub` จะรายงาน arithmetic overflow และคำสั่ง load/store แบบ word หรือ halfword จะรายงาน Address Error เมื่อ address ไม่ได้ aligned ตามขนาดข้อมูล
 
 ## Syscall ที่รองรับ
 
@@ -162,10 +165,13 @@ syscall code อื่นที่ยังไม่รองรับจะข�
 - ข้อมูล: `.word`, `.half`, `.byte`, `.ascii`, `.asciiz`, `.space`, `.align`
 - อื่นๆ ที่รับแต่ไม่มีผล (ผ่านเฉยๆ เพื่อความเข้ากันได้): `.globl` / `.global`
 
-Address เริ่มต้น (อิงตามธรรมเนียม MIPS/MARS):
+Address เริ่มต้น (อิงตาม MIPS Reference Data Card ใน `EMIPS.pdf`):
 - `.text` เริ่มที่ `0x00400000`
-- `.data` เริ่มที่ `0x10010000`
+- `.data` เริ่มที่ `0x10000000`
+- `$gp` เริ่มต้นที่ `0x10008000`
 - `$sp` เริ่มต้นที่ `0x7ffffffc` (stack โตลง)
+
+หน่วยความจำแบบหลายไบต์ใช้ลำดับ **Big Endian** ตามส่วน Data Alignment ของเอกสาร
 
 ถ้ามี label ชื่อ `main` โปรแกรมจะเริ่มรันจาก label นั้น ถ้าไม่มีจะเริ่มรันจากคำสั่งแรกของ `.text`
 
@@ -240,7 +246,7 @@ mips-simulator/
 │   ├── sample.ts             # โค้ดตัวอย่างเริ่มต้น
 │   └── mips/
 │       ├── registers.ts        # ตาราง mapping ชื่อ register ↔ เลข
-│       ├── memory.ts             # หน่วยความจำแบบ byte-addressable (little-endian, sparse)
+│       ├── memory.ts             # หน่วยความจำแบบ byte-addressable (big-endian, sparse)
 │       ├── assembler.ts           # two-pass assembler: parse, ขยาย pseudo-instruction, resolve label
 │       ├── cpu.ts                    # ตัวจำลอง CPU: execute ทีละคำสั่ง, จัดการ syscall
 │       ├── types.ts                   # type กลางที่ใช้ร่วมกัน
@@ -251,16 +257,16 @@ mips-simulator/
 ## สถาปัตยกรรมการทำงานภายใน
 
 1. **Assemble**: `assemble(source)` ใน `lib/mips/assembler.ts` ทำงาน 2 pass
-   - Pass 1: ไล่อ่านทีละบรรทัด แยก label/directive/instruction, ขยาย pseudo-instruction เป็นคำสั่งจริง, จัดวาง `.data` segment ลง memory พร้อมคำนวณ address ของแต่ละ label
+   - Pass 1: ไล่อ่านทีละบรรทัด แยก label/directive/instruction, ขยาย pseudo-instruction เป็นคำสั่งจริง, จัดวาง `.data` segment แบบ Big Endian พร้อมคำนวณ address ของแต่ละ label
    - Pass 2: กำหนด address ให้คำสั่งใน `.text` (เรียงตามลำดับ, คำสั่งละ 4 ไบต์) แล้วตรวจสอบความถูกต้องของ operand แต่ละคำสั่ง (จำนวน/ชนิด argument, label ที่อ้างถึงมีอยู่จริงไหม) เก็บ error พร้อมเลขบรรทัดไว้รายงานกลับ
-2. **Execute**: `CPU` class ใน `lib/mips/cpu.ts` ถือ register file (`Int32Array` ขนาด 32), `PC`, `HI/LO` และอ้างถึง `Memory` instance เดียวกับที่ assembler สร้างไว้ ทำงานแบบ **step ทีละคำสั่ง** — เรียก `cpu.step()` หนึ่งครั้งเท่ากับ 1 clock ของการ fetch-decode-execute แบบง่าย
+2. **Execute**: `CPU` class ใน `lib/mips/cpu.ts` ถือ integer register file (`Int32Array` ขนาด 32), floating-point register file, `PC`, `HI/LO`, Coprocessor 0 state และอ้างถึง `Memory` instance เดียวกับที่ assembler สร้างไว้ ทำงานแบบ **step ทีละคำสั่ง** — เรียก `cpu.step()` หนึ่งครั้งเท่ากับ 1 clock ของการ fetch-decode-execute แบบง่าย
 3. **Syscall handling**: เมื่อ `step()` เจอ `syscall` จะคืนค่า `SyscallKind` ให้ฝั่ง hook (`useSimulator.ts`) ไปจัดการ ถ้าเป็น syscall แบบพิมพ์ผลลัพธ์ (print_*) จะพิมพ์ต่อทันทีแล้ว step ต่อได้เลย แต่ถ้าเป็น syscall แบบรอรับข้อมูล (read_int/read_string) การทำงานจะ**หยุดรอ** จนกว่าผู้ใช้จะกรอกค่าผ่าน `InputModal` แล้วเรียก `resolveSyscallInput()` เพื่อไปต่อ
 4. **Run loop**: การกด "Run" จะรันเป็น chunk ละ 20,000 คำสั่งผ่าน `setTimeout(fn, 0)` สลับกันไปเรื่อยๆ (ไม่ใช่ loop เดียวยาวๆ) เพื่อไม่ให้ UI ค้างระหว่างรันโปรแกรมที่มีคำสั่งจำนวนมาก และให้ปุ่ม Stop ตอบสนองได้จริงระหว่างรัน
 5. **Reactivity**: ทุกครั้งที่ state เปลี่ยน (`step`, `run`, syscall, input) hook จะอ่านค่าจาก `cpu.regs`/`cpu.pc`/`cpu.hi`/`cpu.lo` มาแปลงเป็น React state ใหม่ (`snapshot()`) ทำให้ทุกพาเนลอัปเดตพร้อมกันแบบ synchronous กับการ execute แต่ละคำสั่ง
 
 ## ข้อจำกัดที่ควรรู้
 
-- **ไม่รองรับ floating point** (coprocessor 1) และคำสั่ง privileged/exception ขั้นสูง
+- ยังไม่จำลอง exception control flow และคำสั่ง privileged/trap ขั้นสูงครบทุกตัว แม้จะมี `cause`, `status`, `epc` และตรวจ overflow/alignment สำหรับคำสั่งหลักแล้ว
 - **ไม่ได้ encode เป็น binary จริง** — ภายในเก็บคำสั่งเป็น object `{op, args}` ไม่ใช่เลขฐานสอง 32 บิตแบบ real MIPS encoding (เหมาะกับการเรียนรู้ตรรกะของโปรแกรม แต่ไม่เหมาะถ้าต้องการดู machine code จริง)
 - **Editor ยังไม่มี syntax highlighting สี** เป็น textarea ธรรมดา (ไฮไลต์เฉพาะบรรทัดปัจจุบัน/error เท่านั้น)
 - **หน้าต่างไม่ลากย้ายตำแหน่งได้** (fixed layout แบบ grid) แม้หน้าตาจะเป็นสไตล์ Mac OS ก็ตาม
@@ -271,7 +277,6 @@ mips-simulator/
 - [ ] Syntax highlighting สีในตัว editor
 - [ ] หน้าต่างแบบลากย้าย/ปรับขนาดได้จริงเหมือน Mac OS ของแท้
 - [ ] แสดง binary/hex encoding ของแต่ละคำสั่งจริง
-- [ ] รองรับ floating-point instructions (coprocessor 1)
 - [ ] Breakpoint (คลิกที่เลขบรรทัดเพื่อตั้งจุดหยุด)
 - [ ] Persist โค้ดล่าสุดไว้ใน `localStorage`
 

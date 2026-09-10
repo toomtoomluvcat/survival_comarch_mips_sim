@@ -24,7 +24,6 @@ export default function Home() {
     assembleProgram,
     assembleAndRun,
     step,
-    run,
     stop,
     reset,
     submitIntInput,
